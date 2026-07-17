@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jugendrotkreuz Erste-Hilfe Quiz 2026</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #6d4aff 0%, #4a33c4 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2em; margin-bottom: 10px; }
+        .header p { opacity: 0.9; }
+        .mode-info { text-align: center; padding: 15px; color: #666; font-size: 0.95em; }
+        .progress-bar { height: 6px; background: #e0e0e0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #6d4aff, #4a33c4); width: 0%; transition: width 0.3s ease; }
+        .question-container { padding: 30px; }
+        .question-number { color: #6d4aff; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .question-text { font-size: 1.2em; font-weight: 600; line-height: 1.5; margin-bottom: 25px; color: #333; }
+        .options { display: grid; gap: 12px; }
+        .option { padding: 18px 20px; border: 2px solid #e0e0e0; border-radius: 12px; cursor: pointer; transition: all 0.2s; font-size: 1em; }
+        .option:hover:not(.locked) { border-color: #6d4aff; background: #fafaff; }
+        .option.selected { border-color: #6d4aff; background: #e8e0ff; }
+        .option.correct { border-color: #28a745; background: #d4edda; }
+        .option.incorrect { border-color: #dc3545; background: #f8d7da; }
+        .option.locked { cursor: default; }
+        .option-label { font-weight: 600; color: #6d4aff; margin-right: 10px; }
+        .feedback { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; }
+        .feedback.show { display: block; }
+        .feedback.success { background: #d4edda; border-left: 4px solid #28a745; color: #155724; }
+        .feedback.error { background: #f8d7da; border-left: 4px solid #dc3545; color: #721c24; }
+        .score-display { text-align: center; padding: 40px; }
+        .score-circle { width: 150px; height: 150px; border-radius: 50%; background: linear-gradient(135deg, #6d4aff, #4a33c4); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 2.5em; font-weight: bold; color: white; }
+        .score-text { font-size: 1.3em; margin-bottom: 30px; color: #333; }
+        .navigation { padding: 20px; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; }
+        .nav-btn { padding: 10px 20px; font-size: 0.95em; }
+        .hidden { display: none !important; }
+        .settings-panel { padding: 20px; background: #fff3cd; border-left: 4px solid #ffc107; margin: 20px; border-radius: 8px; }
+        .settings-panel h3 { color: #856404; margin-bottom: 15px; }
+        .settings-panel p { color: #856404; line-height: 1.6; }
+        .multi-select-note { background: #e7f3ff; border: 1px solid #b3d7ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9em; color: #004085; }
+        .action-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: all 0.3s; font-weight: 600; }
+        .btn-primary { background: #6d4aff; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #5a3fd4; transform: translateY(-2px); }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover:not(:disabled) { background: #5a6268; transform: translateY(-2px); }
+        .btn-secondary:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover:not(:disabled) { background: #218838; transform: translateY(-2px); }
+        .btn-success:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-warning:hover:not(:disabled) { background: #e0a800; transform: translateY(-2px); }
+        .btn-warning:disabled { background: #ccc; cursor: not-allowed; color: #888; }
+        .result-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+        @media (max-width: 600px) { .header h1 { font-size: 1.5em; } .question-text { font-size: 1.1em; } .option { padding: 15px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Erste-Hilfe Quiz 2026</h1>
+            <p>Österreichisches Jugendrotkreuz | Bundesbewerb 2026</p>
+        </div>
+
+        <div class="mode-info" id="modeInfo">👆 Wähle alle passenden Antworten aus und klicke auf "Überprüfen"!</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="question-container" id="questionContainer"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="action-buttons" id="actionButtons">
+            <button class="btn btn-success" id="checkBtn" onclick="checkAnswer()">✅ Antwort überprüfen</button>
+        </div>
+        <div class="navigation" id="navigation">
+            <button class="btn btn-secondary nav-btn" id="prevBtn" onclick="prevQuestion()">← Zurück</button>
+            <span id="questionIndicator">Frage 1 von 71</span>
+            <button class="btn btn-primary nav-btn" id="nextBtn" onclick="nextQuestion()">Weiter →</button>
+        </div>
+        <div class="score-display hidden" id="scoreDisplay">
+            <div class="score-circle" id="scoreCircle">0%</div>
+            <div class="score-text" id="scoreText">Du hast 0 von 0 Fragen richtig beantwortet!</div>
+            <div class="result-buttons">
+                <button class="btn btn-primary" onclick="restartQuiz()">🔄 Quiz neu starten</button>
+                <button class="btn btn-warning" id="retryWrongBtn" onclick="retryWrongQuestions()">❌ Falsche wiederholen (<span id="wrongCount">0</span>)</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ============================================================================
+// KORREKTE ANTWORTEN — bei Bedarf anpassen!
+// Format: FrageNummer: ['buchstabe'] oder ['a', 'c'] bei mehreren
+// ============================================================================
+const correctAnswers = {
+    1: ['b'],
+    2: ['a', 'c'],
+    3: ['c'],
+    4: ['d'],
+    5: ['a'],
+    6: ['a', 'b', 'c'],
+    7: ['a', 'c'],
+    8: ['b'],
+    9: ['a', 'c', 'd'],
+    10: ['a', 'b'],
+    11: ['b'],
+    12: ['b', 'c', 'd'],
+    13: ['a', 'c'],
+    14: ['d'],
+    15: ['a', 'd'],
+    16: ['a', 'b', 'c', 'd'],
+    17: ['a', 'b'],
+    18: ['a', 'b', 'c'],
+    19: ['a', 'b', 'c'],
+    20: ['b', 'c', 'd'],
+    21: ['a', 'd'],
+    22: ['b'],
+    23: ['a', 'c', 'd'],
+    24: ['d'],
+    25: ['a'],
+    26: ['b', 'c', 'd'],
+    27: ['a', 'b'],
+    28: ['a', 'c'],
+    29: ['c'],
+    30: ['b'],
+    31: ['d'],
+    32: ['b', 'c'],
+    33: ['b'],
+    34: ['a', 'b', 'd'],
+    35: ['a', 'c', 'd'],
+    36: ['a', 'b'],
+    37: ['a', 'c'],
+    38: ['a'],
+    39: ['b'],
+    40: ['a', 'd'],
+    41: ['b', 'd'],
+    42: ['b'],
+    43: ['d'],
+    44: ['b'],
+    45: ['d'],
+    46: ['a'],
+    47: ['a', 'b'],
+    48: ['c', 'd'],
+    49: ['d'],
+    50: ['c'],
+    51: ['c'],
+    52: ['a', 'b', 'd'],
+    53: ['d'],
+    54: ['c'],
+    55: ['b', 'c'],
+    56: ['a', 'd'],
+    57: ['a'],
+    58: ['a', 'b', 'c'],
+    59: ['a'],
+    60: ['a', 'b'],
+    61: ['c'],
+    62: ['a', 'c', 'd'],
+    63: ['a', 'b', 'c', 'd'],
+    64: ['b', 'd'],
+    65: ['a'],
+    66: ['a', 'c', 'd'],
+    67: ['a'],
+    68: ['c'],
+    69: ['b', 'c', 'd'],
+    70: ['b', 'd'],
+    71: ['d']
+};
+
+// Original questions — stored once, never modified
+const originalQuestions = [
+    { n: 1, t: "Durch starke Sonnenbestrahlung kann es zu Kopfschmerzen, Übelkeit, Erbrechen, Bewusstseinsstörungen, Krämpfen etc. kommen. Mit welchen Notfällen ist zu rechnen?", o: ["Sonnenallergie", "Hitzenotfall", "Schlaganfall", "Nasenbluten"] },
+    { n: 2, t: "Welche Erste-Hilfe-Maßnahmen sind bei einem Verdacht eines Herzinfarkts zu setzen?", o: ["Notruf verständigen, Defibrillator und Verbandskasten holen lassen", "Lagerung mit erhöhten Beinen", "Beruhigen der Person", "Falls nach 1 Stunde keine Besserung: Hausarzt aufsuchen"] },
+    { n: 3, t: "Durch körperliche Anstrengung in heißer oder feuchtwarmer Umgebung kann es zu einem Wärmestau und zu einer Erhöhung der Körpertemperatur kommen. Wie nennt man dieses Krankheitsbild?", o: ["Hexenschuss", "Hypertonie", "Hitzschlag", "Hyperventilation"] },
+    { n: 4, t: "Bei welchem Notfall muss nicht immer sofort der Rettungsdienst verständigt werden?", o: ["Schmerzen in der Brust", "Taubheitsgefühl in einer Körperhälfte", "Asthmaanfall", "Kollaps"] },
+    { n: 5, t: "Welche Aussagen treffen bei einer Vergiftung zu?", o: ["Eine Vergiftung kann einen lebensbedrohlichen Zustand hervorrufen", "Vergiftungen entstehen am häufigsten bei Gefahrgutunfällen", "Nur bei Aufnahme großer Mengen schädlicher Substanzen, kann von einer Vergiftung gesprochen werden", "Nur feste Stoffe können Vergiftungen hervorrufen"] },
+    { n: 6, t: "Welche typischen Warnzeichen weisen auf einen Schlaganfall hin?", o: ["Plötzliche Schwäche oder Gefühlsstörungen einer Körperseite, besonders im Gesicht oder im Arm", "Schwindel, Gangunsicherheit und Verwirrtheit", "Erkrankte/r kann keinen einfachen Satz nachsprechen", "Schnelle Atmung (hyperventilieren)"] },
+    { n: 7, t: "Welche Erste-Hilfe-Maßnahmen sind bei einem Asthmaanfall zu setzen?", o: ["Notruf 144 verständigen, Lagerung mit erhöhtem Oberkörper", "1450 verständigen, Lagerung mit erhöhten Beinen", "Notfallmedikamente sollen eingenommen werden", "Kühlung der Atemwege, z. B. mit Eiswürfeln von innen und von außen"] },
+    { n: 8, t: "Welche Erste-Hilfe-Maßnahmen sind nach einer Vergiftung durchzuführen? Die Person ist nicht ansprechbar.", o: ["Giftentfernung durch provoziertes Erbrechen", "Überprüfung der Atmung: stabile Seitenlage oder Wiederbelebung durchführen", "Bei nicht vorhandener Atmung, Verzicht auf Herzdruckmassage", "Bei Tabletten in den Atemwegen: Heimlich-Manöver im Liegen durchführen"] },
+    { n: 9, t: "Welche Erste-Hilfe-Maßnahmen sind beim Verdacht der Blutzuckerentgleisung bei einem Diabetiker zu setzen?", o: ["Wenn die betroffene Person ansprechbar ist, soll Zuckerhaltiges zu trinken oder zu essen verabreicht werden", "Lagerung: Seitenlagerung", "Lagerung: mit erhöhten Beinen", "Notruf absetzen"] },
+    { n: 10, t: "Bei welchen Notfällen wird eine Lagerung mit erhöhtem Oberkörper empfohlen?", o: ["Atemnot", "Herzbeschwerden", "Starke Blutung", "Kollaps"] },
+    { n: 11, t: "Bei Verdacht auf Schlaganfall wendet der/die Ersthelfer:in den FAST-Test an. F steht für Face (Gesicht), S steht für Speech (Sprache), T steht für Time (Zeit). Wofür steht das „A“ bei FAST?", o: ["Apoplexie (Schlaganfall)", "Arms (Arme)", "Arrhythmie (Unregelmäßigkeit)", "Azidose (Übersäuerung)"] },
+    { n: 12, t: "Welche Erste-Hilfe-Maßnahmen sind bei einem Krampfanfall korrekt?", o: ["Zunge festhalten, um Zungenbiss zu vermeiden", "Während des Krampfes vor weiteren Verletzungen schützen (z. B. Sessel wegstellen)", "Nach dem Krampfanfall, Atmung überprüfen", "Wenn Erkrankte/r nach dem Krampf ansprechbar ist: Seitenlagerung empfohlen"] },
+    { n: 13, t: "Was sind Erste-Hilfe-Maßnahmen bei einem Kollaps?", o: ["Beine hochlagern", "Warme gezuckerte Getränke verabreichen", "Sollte sich der Zustand nicht rasch bessern: Rettungsdienst verständigen", "Eis zum Lutschen verabreichen"] },
+    { n: 14, t: "Wie lautet die Telefonnummer der Vergiftungsinformationszentrale (VIZ)?", o: ["01/43 43 43", "01/144", "01/0800 133 133", "01/406 43 43"] },
+    { n: 15, t: "Welche Anzeichen können auf einen Schlaganfall deuten?", o: ["Plötzliche Schwäche, Gefühlsstörung oder Lähmung einer Körperseite", "Heißer Kopf", "Akute Bauchschmerzen", "Erkrankte/r kann keinen einfachen Satz nachsprechen"] },
+    { n: 16, t: "Bei welchen Erkrankungen wird eine Lagerung mit erhöhtem Oberkörper empfohlen?", o: ["Allergische Reaktion", "Herzbeschwerden", "Hitzenotfall", "Asthmaanfall"] },
+    { n: 17, t: "Bei welchen Notfällen ist eine Seitenlage sinnvoll?", o: ["Bewusstseinsstörung", "Gefahr des Erbrechens", "Herzbeschwerden mit Atemnot", "Bei verstauchtem Knöchel"] },
+    { n: 18, t: "Welche Gefahren bestehen bei einem Stich, z. B. von einer Biene?", o: ["Schwellung und Rötung des Gewebes im Bereich der Einstichstelle", "Gefahr einer schweren allergischen Reaktion", "Schwellungen im Bereich der Atemwege", "Unterzuckerung"] },
+    { n: 19, t: "Welche der angeführten Erste-Hilfe-Maßnahmen sind bei einem Schlaganfall zu setzen?", o: ["Notruf", "Seitenlage empfohlen", "Basismaßnahmen", "Die betroffene Körperregion möglichst hochhalten"] },
+    { n: 20, t: "Was können Anzeichen für einen Herzinfarkt sein?", o: ["Kopfschmerzen und Ohrensausen", "Schmerzen in der Brust", "Engegefühl in der Brust", "Angst, Atemnot"] },
+    { n: 21, t: "Welche Erste-Hilfe-Maßnahmen sind bei einer Vergiftung durchzuführen, wenn das Gift bekannt ist und der/die Betroffene ansprechbar ist und normal reagiert?", o: ["Zuerst Notruf, dann Vergiftungsinformationszentrale kontaktieren und Anweisungen folgen", "Sofort schluckweise Wasser zum Trinken geben; falls keine Besserung Notruf wählen", "Zum Erbrechen bringen", "Seitenlage durchführen"] },
+    { n: 22, t: "Welches Prinzip wird verwendet, um bei einem psychiatrischen Notfall zu unterstützen?", o: ["Das Feel-Hear-Soul Prinzip", "Das Look-Listen-Link Prinzip", "Das FAST-Prinzip", "Das STOP-Prinzip"] },
+    { n: 23, t: "Welche Telefonnummern kann man in Österreich für Beratung in psychisch belastenden Situationen wählen?", o: ["116 123", "01/406 43 43", "147", "142"] },
+    { n: 24, t: "Eine Person befindet sich in einer psychisch belastenden Situation. In welchem Fall muss man sofort den Rettungsdienst verständigen?", o: ["Wenn die betroffene Person 3 Tage hintereinander schlecht geschlafen hat", "Wenn die betroffene Person eine geringe Verhaltensänderung zeigt", "Wenn die betroffene Person nicht gut erklären kann, was sie braucht", "Bei Selbst- oder Fremdgefährdung"] },
+    { n: 25, t: "Die Notrufnummer der Feuerwehr lautet…", o: ["122", "133", "144", "112"] },
+    { n: 26, t: "Welche Maßnahmen ergreifen Sie, wenn eine Person reglos am Bauch liegt?", o: ["Sofort stabile Seitenlage durchführen", "Notruf (veranlassen)", "Laut ansprechen und sanft schütteln", "Wenn keine Reaktion: Person umdrehen"] },
+    { n: 27, t: "Welche Rettungsmöglichkeiten aus einer Gefahrenzone hat der/die Ersthelfer:in?", o: ["Rautekgriff anwenden", "Wegziehen in Bauch- oder Rückenlage", "Rettungstuch verwenden", "Seiltechniken anwenden"] },
+    { n: 28, t: "Welche Erste-Hilfe-Maßnahmen sind beim Verdacht der Unterkühlung zu setzen?", o: ["Notruf, Basismaßnahmen", "Warme alkoholische Getränke verabreichen, frottieren, gut zudecken", "Warme gezuckerte Getränke verabreichen, Bewegung vermeiden, gut zudecken", "Kopf-Tieflagerung um weiteres Absinken der Temperatur zu vermeiden"] },
+    { n: 29, t: "Die Notrufnummer vom Rettungsdienst lautet…", o: ["141", "133", "144", "112"] },
+    { n: 30, t: "Die Notrufnummer der Polizei lautet…", o: ["122", "133", "144", "911"] },
+    { n: 31, t: "Die Nummer des Euro-Notrufs lautet…", o: ["122", "128", "144", "112"] },
+    { n: 32, t: "Welche Angaben sind beim Wählen des Notrufs sinnvoll?", o: ["Ob ich einen ÖNORM-Verbandskasten besitze", "Genaue Adressangabe", "Exakte Kilometerangabe und Fahrtrichtung auf der Autobahn", "Body-Mass-Index"] },
+    { n: 33, t: "Welche Nummer sollte bei einem medizinischen Notfall bevorzugt gerufen werden?", o: ["1450", "144", "Völlig egal", "133"] },
+    { n: 34, t: "Was soll man bei einem Notruf beachten?", o: ["Den Anweisungen der Leitstelle folgen", "Sich für den Notruf Zeit nehmen und auf die Fragen der Leitstelle antworten", "Notruf wählen, Notfallort nennen, auflegen und Erste Hilfe leisten", "Das Gespräch beendet die Leitstelle"] },
+    { n: 35, t: "Welche Maßnahmen gehören zu den Basismaßnahmen?", o: ["Psychische Betreuung (Look-Listen-Link)", "Zur Aktivierung des Kreislaufs aufstehen", "Angenehme Lagerung einnehmen (z. B. erhöhter Oberkörper bei Atemnot)", "Für frische Luft sorgen und bei Notwendigkeit beengende Kleidungsstücke öffnen"] },
+    { n: 36, t: "Welche Aufgaben hat der/die Ersthelfer:in?", o: ["Starke Blutungen stillen", "Notruf absetzen", "E-Card und Ausweis kontrollieren", "Retten von Verletzten aus allen Gefahrensituation"] },
+    { n: 37, t: "Welches Material wird für den manuellen Druck benötigt?", o: ["Saugendes Material, z. B. Wundauflage", "Material zum Abbinden", "Falls vorhanden: Einmalhandschuhe", "Wunddesinfektion"] },
+    { n: 38, t: "Wie lautet die Erste-Hilfe-Maßnahme, die mit saugendem Material mit den Fingern, dem Handballen oder der Faust mit Druck auf die stark blutende Wunde ausgeübt wird?", o: ["Manueller Druck", "Blutdruck", "Herzdruckmassage", "Druckverband"] },
+    { n: 39, t: "Welche Lagerung wird bei einer starken Blutung empfohlen (z.B. Kreissägenverletzung am Unterarm)?", o: ["Oberkörper-Hochlagerung", "Beine-Hochlagerung", "Deckenrolle unter dem Knie", "Lagerung ohne Veränderung der Körperhaltung"] },
+    { n: 40, t: "Welche Erste-Hilfe-Maßnahmen sind bei einer starken Blutung am Unterschenkel durchzuführen?", o: ["Verletzte Person hinlegen", "Verletzte Person stehen lassen", "Ersthelfer:in soll nur den Notruf absetzen", "Manuellen Druck durchführen oder Druckverband anlegen; Beine hochlagern"] },
+    { n: 41, t: "Wie wird die Mund-zu-Mund-Beatmung im Rahmen der Ersten Hilfe durchgeführt?", o: ["Notfallbeatmungstuch über Nase der erkrankten Person legen, Kopf nackenwärts überstrecken, Mund zuhalten und 2 Mal beatmen", "Der/die Ersthelfer:in kontrolliert durch das normale Heben und Senken des Brustkorbs die Effektivität der Beatmung", "Die Beatmung wird ausschließlich durch den/die Notarzt/ die Notärztin durchgeführt", "Notfallbeatmungstuch über den Mund der erkrankten Person legen, Kopf nackenwärts überstrecken, Nase zuhalten und 2 Mal beatmen"] },
+    { n: 42, t: "Wie wird das Bewusstsein überprüft?", o: ["Reglose Person massieren, bis der/die Notarzt/ Notärztin eintrifft", "Durch lautes Ansprechen und sanftes Schütteln an den Schultern", "Pupillenreflexe der reglosen Person mit einer (Handy-)Taschenlampe überprüfen", "Schmerzreiz am Handrücken durchführen"] },
+    { n: 43, t: "Welche Lagerung wird bei einer reglosen Person mit normaler Atmung durchgeführt?", o: ["Oberkörper-Hochlagerung", "Lagerung ohne Veränderung der Körperhaltung", "Deckenrolle unter dem Knie", "Stabile Seitenlage"] },
+    { n: 44, t: "Wie soll ein/e Ersthelfer:in weiter vorgehen, wenn festgestellt wird, dass die reglose Person atmet, die Atmung aber nicht normal ist?", o: ["Stabile Seitenlage durchführen", "Wiederbelebung beginnen", "Erkrankte Person liegen lassen und auf Rettungsdienst warten", "Erkrankte Person 2-mal beatmen"] },
+    { n: 45, t: "Welche Schritte sind als nächstes durchzuführen, wenn der/die Verletzte auf lautes Ansprechen und sanftes Schütteln nicht reagiert?", o: ["Hilferuf, Atmung kontrollieren, Atemwege freimachen", "Stabile Seitenlage durchführen", "Vor dem Eintreffen des Rettungsdienstes sind keine weiteren Maßnahmen erforderlich", "Hilferuf, Atemwege freimachen, Atmung kontrollieren"] },
+    { n: 46, t: "Wie wird die stabile Seitenlage korrekt durchgeführt?", o: ["Arm zur Seite legen, gegenüberliegendes Knie hochziehen, Handglenk aufs Knie legen und herdrehen", "Arm nach oben legen, gegenüberliegendes Knie hochziehen und herdrehen", "Arm zur Seite legen, gegenüberliegendes Knie hochziehen, Ellbogen aufs Knie und herdrehen", "Beide Arme zur Seite legen, gegenüberliegendes Knie hochziehen und herdrehen"] },
+    { n: 47, t: "Welche Erste-Hilfe-Ausrüstung kann eine/n Ersthelfer:in vor Infektionen schützen?", o: ["Beatmungstuch", "Einmalhandschuhe", "Taschentuch", "Rettungsdecke"] },
+    { n: 48, t: "Wie versorgt man eine/n Verletzte/n mit einer stark blutenden Wunde an einer Extremität?", o: ["Nur den Notruf abzusetzen – der Rettungsdienst kümmert sich um die Wunde", "Pflasterverband anbringen", "Manuellen Druck auf die Wunde ausüben oder Druckverband anlegen", "Notruf absetzen, verletzten Körperteil hochhalten"] },
+    { n: 49, t: "Wie gehen Sie bei der Wiederbelebung einer erwachsenen Person als trainierte/r Ersthelfer:in vor?", o: ["3 Herzdruckmassagen / 1 Beatmung", "10 Herzdruckmassagen / 5 Beatmungen", "15 Herzdruckmassagen / 2 Beatmungen", "30 Herzdruckmassagen / 2 Beatmungen"] },
+    { n: 50, t: "Wann spricht man von einer reglosen Person?", o: ["Person reagiert nur auf Schmerzreize wie Zwicken in die Wangen", "Person ist verwirrt und kann sich an nichts erinnern", "Keine Reaktion auf lautes Ansprechen und sanftes Schütteln", "Bewusstseinslage kann durch den/die Ersthelfer:in nicht überprüft werden"] },
+    { n: 51, t: 'Was bedeutet die Abkürzung "AED"?', o: ["Automatisierte – Energiegeladene – Darreichung", "Automatisierte - Erdgas - Dauerfunktion", "Automatisierter - Externer - Defibrillator", "Automatisierter - Elektrischer - Druck"] },
+    { n: 52, t: "Welche Aussagen treffen bei einer reglosen Person zu?", o: ["In Rückenlage besteht Lebensgefahr durch Ersticken", "Stabile Seitenlage ist die optimale Lagerung, wenn normale Atmung feststellbar ist", "In Rückenlage besteht keine Lebensgefahr", "Falls keine normale Atmung feststellbar, mit Wiederbelebung starten"] },
+    { n: 53, t: "In welchem Alter darf von Ersthelfer:innen ein Defibrillator verwendet werden?", o: ["Ab dem 1. Lebensjahr", "Ab dem 8. Lebensjahr", "Ab Beginn der Pubertät", "In jedem Alter"] },
+    { n: 54, t: 'Was bedeutet "defibrillieren"?', o: ["elektrisieren", "früh erkennen", "entflimmern", "reanimieren"] },
+    { n: 55, t: "Welche Erste-Hilfe-Maßnahmen sind durchzuführen, sobald der/die Erkrankte in die stabile Seitenlage gebracht wurde?", o: ["Elektroden des Defibrillators am Brustkorb anbringen", "Basismaßnahmen durchführen", "Spätestens jetzt Notruf wählen, regelmäßige Atemkontrollen", "Sofort mit Herzdruckmassage und Beatmung beginnen"] },
+    { n: 56, t: "Welche Aussagen treffen bezüglich Defibrillation zu?", o: ["Die Defibrillation darf in jedem Alter angewendet werden", "Die Defibrillation darf nur von Sanitäter:innen angewendet werden", "Die Defibrillation darf nur von einem Arzt/ einer Ärztin angewendet werden", "Die rechtliche Situation besagt, dass die Defibrillation in einer Notsituation unbedenklich ist"] },
+    { n: 57, t: "Welche Maßnahmen führen Sie bei einer reglosen Person mit normaler Atmung durch?", o: ["Stabile Seitenlage zum Freihalten der Atemwege", "Auf dem Rücken liegend und mit überstrecktem Kopf lagern", "Flache Rückenlagerung und Beine hochlagern", "Erhöhter Oberkörper für die Entlastung des Herzens"] },
+    { n: 58, t: "Was soll ein/e Ersthelfer:in bei der Defibrillation beachten?", o: ["Elektroden fest auf den Brustkorb kleben", "Während Schockabgabe die erkrankte Person nicht berühren", "Nassen Brustkorb vorher abtrocknen", "Während Schockabgabe die zu defibrillierende Person berühren (Qualitätskontrolle)"] },
+    { n: 59, t: "Bei welcher Verletzung ist der manuelle Druck zur Blutstillung geeignet?", o: ["Starke Blutung am Unterschenkel", "Schürfwunde", "Magenblutung", "Bluterguss"] },
+    { n: 60, t: "Welche Handgriffe führen Sie vor einer Mund-zu-Mund-Beatmung durch?", o: ["Kinn hochziehen", "Nase zuhalten", "Arm im rechten Winkel zur Seite legen", "Stabile Seitenlage"] },
+    { n: 61, t: "Wenn ein/e Erwachsene/r nicht ansprechbar ist und nicht normal atmet, rufen Sie den Rettungsdienst und...", o: ["Führen die stabile Seitenlage durch", "Führen sofort Beatmungen durch", "Beginnen sofort mit der Herzdruckmassage", "Versuchen eine Lagerung mit erhöhten Beinen"] },
+    { n: 62, t: "Aus welchen Schritten besteht der Notfallcheck?", o: ["Atemwege freimachen und Atmung kontrollieren", "Notfallcheck dürfen nur Sanitäter:innen oder Notarzt/Notärztinnen durchführen", "Laut ansprechen und sanft schütteln, Hilferuf", "Atemkontrolle nicht länger als 10 Sekunden durchführen"] },
+    { n: 63, t: "Welche Aussagen zur Herzdruckmassage im Rahmen der Ersten Hilfe sind korrekt?", o: ["Beide Arme des Helfers durchstrecken", "Störende Kleidung der erkrankten Person entfernen (dicke Mäntel etc.)", "Erkrankte Person auf eine harte Unterlage legen", "Auf die Mitte des Brustkorbes schnell und kräftig drücken"] },
+    { n: 64, t: "Welche Erste-Hilfe-Maßnahmen sind bei einem Atem-Kreislauf-Stillstand durchzuführen?", o: ["Zweimalige Beatmung und danach den Notruf absetzen", "Einen Defibrillator und Verbandskasten holen lassen", "Notruf absetzen und Beatmungen durchführen", "Notruf absetzen und sofort Herzdruckmassagen und Beatmungen (30:2) durchführen"] },
+    { n: 65, t: "Welche Vorgehensweise ist bei der Anwendung eines Defibrillators korrekt?", o: ["Defibrillator einschalten und den Anweisungen des Geräts folgen", "Während Schockabgabe Herzdruckmassage durchführen", "Elektroden aufkleben und dann erst Defibrillator einschalten", "Solange eine Beatmung durchgeführt wird: keine Elektroden aufkleben"] },
+    { n: 66, t: "Was versteht man unter einer starken Blutung?", o: ["Wenn aus einer Wunde innerhalb kurzer Zeit eine große Blutmenge verloren geht", "Wenn ein paar Tropfen Blut langsam aus der Wunde tropfen", "Wenn das Blut aus der Wunde spritzt", "Wenn das Blut im Schwall austritt"] },
+    { n: 67, t: "Welche Maßnahme ist von/vom Ersthelfer:in zu setzen, wenn es bei einer starken Blutung durch den Druckverband durchblutet?", o: ["Manuellen Druck auf dem Druckverband ausüben", "Weiterbluten lassen", "Bestehenden Druckverband wieder heruntergeben und mit verwendetem Material wieder neuen Druckverband anlegen", "Abbindung vornehmen"] },
+    { n: 68, t: "Was sollte der/die Ersthelfer:in bei der Blutstillung vermeiden?", o: ["Verwendung einer keimfreien Wundauflage", "Durchführung der Basismaßnahmen", "Wenn möglich: direkten Kontakt mit Blut", "Wenn möglich: Verwendung von Mullbindenverbänden"] },
+    { n: 69, t: "Welche Erste-Hilfe-Maßnahmen sind beim Anlegen eines Druckverbandes durchzuführen?", o: ["E-Card und Ausweis kontrollieren", "Keimfreie Wundauflage fest auf die Wunde drücken", "Druckkörper durch festes Umwickeln mit der Mullbinde einwickeln", "Verletzte/r soll anfangs selbst fest auf die Wunde drücken"] },
+    { n: 70, t: "Welche Erste-Hilfe-Maßnahmen sind beim Verschlucken (schwere Verlegung der Atemwege) durchzuführen?", o: ["Oberkörper nach vorne beugen, Brustkorb stützen und bis zu 5x Heimlich-Manöver durchführen. Falls keine Besserung: Bis zu 5 Schläge zwischen die Schulterblätter durchführen usw.", "Oberkörper nach vorne beugen, Brustkorb stützen und bis zu 5x fest zwischen die Schulterblätter schlagen. Falls keine Besserung: Heimlich-Handgriff bis zu 5x durchführen usw.", "Dem/der Betroffenen warme Getränke zum Auflösen des Fremdkörpers verabreichen", "Falls der/die Betroffene reglos wird, entspricht dies einem Atem-Kreislauf-Stillstand und es ist sofort mit der Wiederbelebung zu beginnen"] },
+    { n: 71, t: "Wie wird die Maßnahme bei einer schweren Verlegung der Atemwege bei Säuglingen bezeichnet, nachdem die Schläge zwischen die Schulterblätter durchgeführt wurden?", o: ["Heimlich-Handgriff", "Rautek-Griff", "Kompressionsverband", "Brustkorbkompression"] }
+];
+
+// Runtime state
+let activeQuestions = [...originalQuestions]; // Currently displayed questions (can be filtered for retry)
+let currentQuestion = 0;
+let userAnswers = {};      // { questionNumber: ['a', 'c'] }
+let isAnswerChecked = {};  // { questionNumber: true/false }
+let wrongQuestions = [];   // Question numbers answered wrong in the current run
+let quizMode = 'normal';   // 'normal' or 'retry-wrong'
+
+function startQuiz() {
+    // document.getElementById('settingsPanel').classList.add('hidden');
+    activeQuestions = [...originalQuestions];
+    currentQuestion = 0;
+    userAnswers = {};
+    isAnswerChecked = {};
+    wrongQuestions = [];
+    quizMode = 'normal';
+    showQuizUI();
+    renderQuestion();
+}
+
+function showQuizUI() {
+    document.getElementById('questionContainer').classList.remove('hidden');
+    document.getElementById('navigation').classList.remove('hidden');
+    document.getElementById('actionButtons').classList.remove('hidden');
+    document.getElementById('scoreDisplay').classList.add('hidden');
+}
+
+function hideQuizUI() {
+    document.getElementById('questionContainer').classList.add('hidden');
+    document.getElementById('navigation').classList.add('hidden');
+    document.getElementById('actionButtons').classList.add('hidden');
+    document.getElementById('feedback').className = 'feedback';
+    document.getElementById('feedback').textContent = '';
+}
+
+function renderQuestion() {
+    const q = activeQuestions[currentQuestion];
+    const container = document.getElementById('questionContainer');
+    const isChecked = !!isAnswerChecked[q.n];
+
+    container.innerHTML = `
+        <div class="question-number">Frage ${currentQuestion + 1} von ${activeQuestions.length}${quizMode === 'retry-wrong' ? ' (Wiederholung)' : ''}</div>
+        <div class="question-text">${q.t}</div>
+        <div class="multi-select-note">ℹ️ Manche Fragen können mehrere richtige Antworten haben. Wähle alle passenden Optionen aus und klicke auf "Überprüfen".</div>
+        <div class="options">
+            ${q.o.map((opt, i) => {
+                const letter = String.fromCharCode(97 + i);
+                const isSelected = userAnswers[q.n]?.includes(letter);
+                return `<div class="option${isSelected ? ' selected' : ''}${isChecked ? ' locked' : ''}" data-letter="${letter}" onclick="${isChecked ? '' : `selectOption('${letter}')`}">
+                    <span class="option-label">${letter.toUpperCase()})</span>${opt}
+                </div>`;
+            }).join('')}
+        </div>
+    `;
+
+    const feedback = document.getElementById('feedback');
+    feedback.className = 'feedback';
+    feedback.textContent = '';
+
+    // If already checked, restore the feedback display
+    if (isChecked) {
+        const userAns = (userAnswers[q.n] || []).sort();
+        const correctAns = (correctAnswers[q.n] || []).sort();
+        const isCorrect = JSON.stringify(userAns) === JSON.stringify(correctAns);
+
+        if (isCorrect) {
+            feedback.className = 'feedback success show';
+            feedback.innerHTML = '✅ <strong>Richtig!</strong> Alle gewählten Antworten sind korrekt.';
+        } else {
+            feedback.className = 'feedback error show';
+            feedback.innerHTML = `❌ <strong>Nicht ganz richtig.</strong> Deine Antwort: ${userAns.join(', ').toUpperCase()}. Richtige Antwort(en): ${correctAns.join(', ').toUpperCase()}`;
+        }
+
+        document.querySelectorAll('.option').forEach(el => {
+            const letter = el.dataset.letter;
+            if (correctAnswers[q.n]?.includes(letter)) el.classList.add('correct');
+            if (userAns.includes(letter) && !correctAnswers[q.n]?.includes(letter)) el.classList.add('incorrect');
+        });
+    }
+
+    updateProgress();
+    updateNavigation();
+    updateCheckButton();
+
+    const modeText = isChecked
+        ? (JSON.stringify((userAnswers[q.n]||[]).sort()) === JSON.stringify((correctAnswers[q.n]||[]).sort()) ? '✅ Richtig!' : '❌ Falsch — siehe korrekte Antwort unten.')
+        : '👆 Wähle alle passenden Antworten aus und klicke auf "Überprüfen"!';
+    document.getElementById('modeInfo').textContent = quizMode === 'retry-wrong' ? `🔁 Wiederholungsmodus — ${modeText}` : modeText;
+}
+
+function selectOption(letter) {
+    const qNum = activeQuestions[currentQuestion].n;
+    if (isAnswerChecked[qNum]) return;
+
+    if (!userAnswers[qNum]) userAnswers[qNum] = [];
+    const idx = userAnswers[qNum].indexOf(letter);
+    if (idx > -1) userAnswers[qNum].splice(idx, 1);
+    else userAnswers[qNum].push(letter);
+
+    renderQuestion();
+}
+
+function checkAnswer() {
+    const qNum = activeQuestions[currentQuestion].n;
+    if (isAnswerChecked[qNum]) return;
+
+    const userAns = userAnswers[qNum]?.sort() || [];
+    if (userAns.length === 0) {
+        alert('Bitte wähle mindestens eine Antwort aus!');
+        return;
+    }
+
+    const correctAns = (correctAnswers[qNum] || []).sort();
+    isAnswerChecked[qNum] = true;
+
+    const isCorrect = JSON.stringify(userAns) === JSON.stringify(correctAns);
+
+    if (!isCorrect && !wrongQuestions.includes(qNum)) {
+        wrongQuestions.push(qNum);
+    }
+
+    renderQuestion();
+}
+
+function nextQuestion() {
+    const currentQNum = activeQuestions[currentQuestion].n;
+
+    // Only show the skip warning if the question has NOT been answered yet
+    if (!isAnswerChecked[currentQNum]) {
+        if (!confirm('Diese Frage wurde noch nicht beantwortet. Möchtest du sie wirklich überspringen?')) {
+            return;
+        }
+    }
+
+    if (currentQuestion < activeQuestions.length - 1) {
+        currentQuestion++;
+        renderQuestion();
+    } else {
+        showResults();
+    }
+}
+
+function prevQuestion() {
+    if (currentQuestion > 0) {
+        currentQuestion--;
+        renderQuestion();
+    }
+}
+
+function updateProgress() {
+    const percent = ((currentQuestion + 1) / activeQuestions.length) * 100;
+    document.getElementById('progressFill').style.width = `${percent}%`;
+    document.getElementById('questionIndicator').textContent = `Frage ${currentQuestion + 1} von ${activeQuestions.length}`;
+}
+
+function updateNavigation() {
+    document.getElementById('prevBtn').disabled = currentQuestion === 0;
+    document.getElementById('nextBtn').textContent = currentQuestion === activeQuestions.length - 1 ? 'Abschließen' : 'Weiter →';
+}
+
+function updateCheckButton() {
+    const btn = document.getElementById('checkBtn');
+    const qNum = activeQuestions[currentQuestion].n;
+    if (isAnswerChecked[qNum]) {
+        btn.textContent = '✅ Antwort geprüft';
+        btn.disabled = true;
+    } else {
+        btn.textContent = '✅ Antwort überprüfen';
+        btn.disabled = false;
+    }
+}
+
+function calculateResults() {
+    let correctCount = 0;
+    wrongQuestions = [];
+
+    Object.keys(userAnswers).forEach(qNumStr => {
+        const qNum = parseInt(qNumStr);
+        const userAns = (userAnswers[qNum] || []).sort();
+        const correctAns = (correctAnswers[qNum] || []).sort();
+
+        if (JSON.stringify(userAns) === JSON.stringify(correctAns)) {
+            correctCount++;
+        } else {
+            if (!wrongQuestions.includes(qNum)) wrongQuestions.push(qNum);
+        }
+    });
+
+    return { correctCount, total: activeQuestions.length, wrongQuestions };
+}
+
+function showResults() {
+    const { correctCount, total, wrongQuestions: wrong } = calculateResults();
+    const score = Math.round((correctCount / total) * 100);
+
+    hideQuizUI();
+    document.getElementById('modeInfo').innerHTML = '🎉 Quiz abgeschlossen!';
+    document.getElementById('scoreDisplay').classList.remove('hidden');
+    document.getElementById('scoreCircle').textContent = `${score}%`;
+    document.getElementById('scoreText').textContent = `Du hast ${correctCount} von ${total} Fragen richtig beantwortet!`;
+
+    const retryBtn = document.getElementById('retryWrongBtn');
+    document.getElementById('wrongCount').textContent = wrong.length;
+    retryBtn.disabled = wrong.length === 0;
+}
+
+function retryWrongQuestions() {
+    if (wrongQuestions.length === 0) return;
+
+    // Build a list of only the wrong questions, preserving original order
+    activeQuestions = originalQuestions.filter(q => wrongQuestions.includes(q.n));
+
+    currentQuestion = 0;
+    userAnswers = {};
+    isAnswerChecked = {};
+    wrongQuestions = [];
+    quizMode = 'retry-wrong';
+
+    document.getElementById('scoreDisplay').classList.add('hidden');
+    document.getElementById('modeInfo').textContent = '🔁 Wiederholungsmodus: Nur falsch beantwortete Fragen!';
+    showQuizUI();
+    renderQuestion();
+}
+
+function restartQuiz() {
+    activeQuestions = [...originalQuestions];
+    currentQuestion = 0;
+    userAnswers = {};
+    isAnswerChecked = {};
+    wrongQuestions = [];
+    quizMode = 'normal';
+
+    document.getElementById('scoreDisplay').classList.add('hidden');
+    document.getElementById('modeInfo').textContent = '👆 Wähle alle passenden Antworten aus und klicke auf "Überprüfen"!';
+    showQuizUI();
+    renderQuestion();
+}
+startQuiz();
+</script>
+</body>
+</html>
